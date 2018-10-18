@@ -1,3 +1,7 @@
+/slave_*/src/crc16.h
+/slave_*/src/crc16.ino
+/slave_*/src/planetproj.h
+/slave_motor/src/interval_table_d*.h
 
 
 # Created by https://www.gitignore.io/api/vim,git,macos,linux,emacs,python,windows
