@@ -87,7 +87,7 @@ class PlanetProj(object):
             return False
         return True
 
-    def _write_with_cs(self, n, register, data):
+    def _write_with_cs(self, n, register, data, wait = 0.1):
         d = [register]
         d.extend(data)
         d.extend(self._to_le_array(self._crc16(d), n = 2))
@@ -98,7 +98,7 @@ class PlanetProj(object):
         # xxx: Set timeout?
         while True:
             self.i2c.write(d)
-            time.sleep(0.1)
+            time.sleep(wait)
             if self._read_and_check_status():
                 break
             print('Status is not success; retrying...')
