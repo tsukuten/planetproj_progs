@@ -89,8 +89,11 @@ static void callback_receive(const int n)
 
 static void callback_request(void)
 {
-  if (!is_sendbuf_ready)
+  if (!is_sendbuf_ready) {
+    const uint8_t msg[4] = {CMD_STATUS, STATUS_NOT_READY, 0x10, 0x33};
+    Wire.write(msg, sizeof(msg));
     return;
+  }
 
   Wire.write(sendbuf, sendbuf_count);
 
