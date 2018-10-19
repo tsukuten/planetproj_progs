@@ -230,19 +230,6 @@ static void prepare_sendbuf(const size_t count, ...)
   _MemoryBarrier();
 }
 
-static void do_sendbuf(void)
-{
-  if (!is_sendbuf_ready)
-    return;
-
-  Wire.write(sendbuf, sendbuf_count);
-
-  _MemoryBarrier();
-  is_sendbuf_ready = 0;
-  sendbuf_count = 0;
-  _MemoryBarrier();
-}
-
 static void process_set_rotate(const uint8_t is_back, const uint16_t step)
 {
   int16_t i;
@@ -264,6 +251,7 @@ static void process_set_rotate(const uint8_t is_back, const uint16_t step)
   if (step & 1) {
     mydelayMicroseconds(pgm_read_dword(&interval_table[0]));
     do_drive(is_back);
+    digitalWrite(LED_BUILTIN, stat = !stat);
   }
   prepare_sendbuf(2, CMD_STATUS, STATUS_SUCCESS);
 }
@@ -291,7 +279,6 @@ static void callback_receive(const int n)
   }
   if (!crc16_check(recvbuf, n - 2)) {
     prepare_sendbuf(2, CMD_STATUS, STATUS_WRONG_CHECKSUM);
-    do_sendbuf();
     return;
   }
 
@@ -307,8 +294,21 @@ static void callback_receive(const int n)
       prepare_sendbuf(2, CMD_STATUS, STATUS_UNKNOWN_COMMAND);
       break;
   }
+}
 
-  do_sendbuf();
+static void callback_request(void)
+{
+  if (!is_sendbuf_ready) {
+    const uint8_t msg[4] = {CMD_STATUS, STATUS_NOT_READY, 0x10, 0x33};
+    Wire.write(msg, sizeof(msg));
+    return;
+  }
+
+  Wire.write(sendbuf, sendbuf_count);
+
+  _MemoryBarrier();
+  is_sendbuf_ready = 0;
+  sendbuf_count = 0;
 }
 
 void setup(void)
@@ -323,9 +323,11 @@ void setup(void)
   pinMode(PIN_B_POS_N, OUTPUT);
   pinMode(PIN_B_NEG_P, OUTPUT);
   pinMode(PIN_B_NEG_N, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
 
   Wire.begin(ADDR);
   Wire.onReceive(callback_receive);
+  Wire.onRequest(callback_request);
 }
 
 void loop(void)
