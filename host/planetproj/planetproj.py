@@ -19,6 +19,7 @@ ADDR_MOTOR_2 = 0x41
 
 import os
 import sys
+import time
 import fcntl
 import binascii
 
@@ -35,10 +36,10 @@ class I2C(object):
         fcntl.ioctl(self.fd, self.I2C_SLAVE, addr)
 
     def write(self, data):
-        return os.write(self.fd, data)
+        return os.write(self.fd, bytes(data))
 
     def read(self, n):
-        return os.read(self.fd, n)
+        return list(os.read(self.fd, n))
 
 
 class PlanetProj(object):
@@ -68,11 +69,12 @@ class PlanetProj(object):
 
     def _read_and_check_status(self, data = []):
         # xxx: Wait for a full data?
-        data[:] = i2c.read(2 + 2)
+        data[:] = self.i2c.read(2 + 2)
+        print('Received data:', data)
         crc = self._crc16(data[:-2])
         crc_rcv = data[-2] | (data[-1] << 8)
-        if crc != crc_rsv:
-            print('Checksum error: 0x04x vs. 0x%04x for' % (crc, crc_rsv),
+        if crc != crc_rcv:
+            print('Checksum error: 0x%04x vs. 0x%04x for' % (crc, crc_rcv),
                     data[:-2])
             return False
         if data[0] != CMD_STATUS:
@@ -85,20 +87,21 @@ class PlanetProj(object):
             return False
         return True
 
-    def _write_with_cs(self, n, register, data):
+    def _write_with_cs(self, n, register, data, wait = 0.1):
         d = [register]
         d.extend(data)
-        d.extend(self._to_le_array(self._crc16(data), n = 2))
+        d.extend(self._to_le_array(self._crc16(d), n = 2))
         print('Writing to dev %d:' % n, d)
         if self.dry_run:
             return
         self.i2c.set_addr(self.addrs[n])
+        # xxx: Set timeout?
         while True:
             self.i2c.write(d)
-            # xxx: Set timeout?
-            if _read_and_check_status():
+            time.sleep(wait)
+            if self._read_and_check_status():
                 break
-            print('Status is not success; retrying...', file = sys.stderr)
+            print('Status is not success; retrying...')
 
 
 def main():
