@@ -49,18 +49,6 @@ static void prepare_sendbuf(const size_t count, ...)
   _MemoryBarrier();
 }
 
-static void do_sendbuf(void)
-{
-  if (!is_sendbuf_ready)
-    return;
-
-  Wire.write(sendbuf, sendbuf_count);
-
-  _MemoryBarrier();
-  is_sendbuf_ready = 0;
-  sendbuf_count = 0;
-}
-
 static void process_set_brightness(const int n)
 {
   int i;
@@ -86,7 +74,6 @@ static void callback_receive(const int n)
   }
   if (!crc16_check(recvbuf, n - 2)) {
     prepare_sendbuf(2, CMD_STATUS, STATUS_WRONG_CHECKSUM);
-    do_sendbuf();
     return;
   }
 
@@ -98,8 +85,18 @@ static void callback_receive(const int n)
       prepare_sendbuf(2, CMD_STATUS, STATUS_UNKNOWN_COMMAND);
       break;
   }
+}
 
-  do_sendbuf();
+static void callback_request(void)
+{
+  if (!is_sendbuf_ready)
+    return;
+
+  Wire.write(sendbuf, sendbuf_count);
+
+  _MemoryBarrier();
+  is_sendbuf_ready = 0;
+  sendbuf_count = 0;
 }
 
 void setup(void)
@@ -113,6 +110,7 @@ void setup(void)
 
   Wire.begin(ADDR);
   Wire.onReceive(callback_receive);
+  Wire.onRequest(callback_request);
 }
 
 void loop(void)
