@@ -54,12 +54,6 @@ static const unsigned pins[2][2][2] = {
   }
 };
 
-static inline void mydelayMicroseconds(const uint32_t ms)
-{
-  delay(ms / 1000);
-  delayMicroseconds(ms % 1000);
-}
-
 static void motor_set_pulse_core(const enum motor_coil coil,
     const enum motor_polar polar, const enum motor_pulse pulse)
 {
@@ -213,6 +207,10 @@ static uint8_t sendbuf[64];
 static size_t sendbuf_count = 0;
 static volatile _Bool is_sendbuf_ready = 0;
 
+static volatile _Bool doing_rotate = 0;
+static _Bool rotate_is_back = 0;
+static uint16_t rotate_step = 0;
+
 
 static void prepare_sendbuf(const size_t count, ...)
 {
@@ -232,28 +230,9 @@ static void prepare_sendbuf(const size_t count, ...)
 
 static void process_set_rotate(const uint8_t is_back, const uint16_t step)
 {
-  int16_t i;
-  const int16_t n = sizeof(interval_table) / sizeof(*interval_table);
-  int16_t idx;
-  const int16_t step_half = step >> 1;
-  _Bool stat = 0;
-
-  for (i = 0, idx = 0; i < step_half; i ++, idx ++) {
-    mydelayMicroseconds(pgm_read_dword(&interval_table[min(idx, n - 1)]));
-    do_drive(is_back);
-    digitalWrite(LED_BUILTIN, stat = !stat);
-  }
-  for (i = 0, idx -= 1; i < step_half; i ++, idx --) {
-    mydelayMicroseconds(pgm_read_dword(&interval_table[min(idx, n - 1)]));
-    do_drive(is_back);
-    digitalWrite(LED_BUILTIN, stat = !stat);
-  }
-  if (step & 1) {
-    mydelayMicroseconds(pgm_read_dword(&interval_table[0]));
-    do_drive(is_back);
-    digitalWrite(LED_BUILTIN, stat = !stat);
-  }
-  prepare_sendbuf(2, CMD_STATUS, STATUS_SUCCESS);
+  doing_rotate = !0;
+  rotate_is_back = is_back ? !0 : 0;
+  rotate_step = step;
 }
 
 static void process_set_power(const uint8_t polar, const uint8_t power)
@@ -281,11 +260,16 @@ static void callback_receive(const int n)
     prepare_sendbuf(2, CMD_STATUS, STATUS_WRONG_CHECKSUM);
     return;
   }
+  /* If we are rotating, do not prepare sendbuf i.e. do not set is_sendbuf_ready
+   * to true, which results in responding with NOT_READY status when requested.
+   */
+  if (doing_rotate)
+    return;
 
   switch (recvbuf[0]) {
     case CMD_SET_ROTATE:
       process_set_rotate(recvbuf[1],
-            ((uint16_t) recvbuf[2]) | (((uint16_t) recvbuf[3]) << 8));
+          ((uint16_t) recvbuf[2]) | (((uint16_t) recvbuf[3]) << 8));
       break;
     case CMD_SET_POWER:
       process_set_power(recvbuf[1], recvbuf[2]);
@@ -330,6 +314,42 @@ void setup(void)
   Wire.onRequest(callback_request);
 }
 
+static void delayMicroseconds_coarse(const uint32_t us)
+{
+  int32_t c = us >> 7;
+  while (c-- > 0)
+    _delay_us(1UL << 7);
+}
+
+static inline void do_step(const int16_t idx)
+{
+  const int16_t n = sizeof(interval_table) / sizeof(*interval_table);
+  static _Bool stat = 0;
+
+  digitalWrite(LED_BUILTIN, stat = !stat);
+  delayMicroseconds_coarse(pgm_read_dword(&(interval_table[min(idx, n - 1)])));
+  do_drive(rotate_is_back);
+}
+
 void loop(void)
 {
+  if (!doing_rotate)
+    return;
+
+  _MemoryBarrier();
+
+  int16_t i;
+  int16_t idx;
+  const int16_t step_half = rotate_step >> 1;
+
+  for (i = 0, idx = 0; i < step_half; i ++, idx ++)
+    do_step(idx);
+  for (i = 0, idx -= 1; i < step_half; i ++, idx --)
+    do_step(idx);
+  if (rotate_step & 1)
+    do_step(0);
+
+  prepare_sendbuf(2, CMD_STATUS, STATUS_SUCCESS);
+
+  doing_rotate = 0;
 }
