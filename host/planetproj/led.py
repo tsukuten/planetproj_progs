@@ -24,21 +24,20 @@ class LED(planetproj.PlanetProj):
             print('Running in dry-run mode')
             return
         self.i2c = planetproj.I2C()
-        #self.i2cs[i] = I2C.get_i2c_device(addrs[i])
+
+    def get_brightness(self, led):
+        return self.cur_brightness[led]
 
     def set_brightness_multi(self, t):
         ds = [[] for i in range(self.num_devs)]
         for (led, brightness) in t:
-            assert(brightness <= 0xff)
+            assert(0 <= brightness <= 1)
             self.cur_brightness[led] = brightness
             ds[led // self.num_leds_per_dev].extend(
-                    [led % self.num_leds_per_dev, brightness])
+                    [led % self.num_leds_per_dev, int(round(brightness * 255))])
         for i in range(self.num_devs):
             if len(ds[i]) > 0:
                 self._write_with_cs(i, planetproj.CMD_SET_BRIGHTNESS, ds[i])
-
-    def set_brightness(self, led, brightness):
-        self.set_brightness_multi((led, brightness))
 
 
 def main():
