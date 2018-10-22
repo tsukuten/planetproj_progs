@@ -38,16 +38,3 @@ class LED(planetproj.PlanetProj):
         for i in range(self.num_devs):
             if len(ds[i]) > 0:
                 self._write_with_cs(i, planetproj.CMD_SET_BRIGHTNESS, ds[i])
-
-
-def main():
-    assert(len(sys.argv) > 1)
-    assert(len(sys.argv) % 2 == 1)
-    a = []
-    for i in range((len(sys.argv) - 1) // 2):
-        a.append((int(sys.argv[1+i*2+0]), int(sys.argv[1+i*2+1])))
-    led = LED(dry_run = True)
-    led.set_brightness_multi(a)
-
-if __name__ == '__main__':
-    main()
