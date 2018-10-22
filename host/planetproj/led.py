@@ -3,7 +3,6 @@
 from __future__ import print_function, unicode_literals
 import sys
 from . import planetproj
-#import Adafruit_GPIO.I2C as I2C
 
 
 class LED(planetproj.PlanetProj):
