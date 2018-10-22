@@ -214,8 +214,8 @@ static size_t sendbuf_count = 0;
 static volatile _Bool is_sendbuf_ready = 0;
 
 static volatile _Bool doing_rotate = 0;
-static _Bool rotate_is_back = 0;
-static uint16_t rotate_step = 0;
+static volatile _Bool rotate_is_back = 0;
+static volatile uint16_t rotate_step = 0;
 
 
 static void prepare_sendbuf(const size_t count, ...)
@@ -301,6 +301,23 @@ static void callback_request(void)
   sendbuf_count = 0;
 }
 
+static void delayMicroseconds_coarse(const uint32_t us)
+{
+  int32_t c = us >> 7;
+  while (c-- > 0)
+    _delay_us(1UL << 7);
+}
+
+static inline void do_step(const int16_t idx)
+{
+  const int16_t n = sizeof(interval_table) / sizeof(*interval_table);
+  static _Bool stat = 0;
+
+  digitalWrite(LED_BUILTIN, stat = !stat);
+  delayMicroseconds_coarse(pgm_read_dword(&(interval_table[min(idx, n - 1)])));
+  do_drive(rotate_is_back);
+}
+
 void setup_debug(void)
 {
   pinMode(LED_BUILTIN, OUTPUT);
@@ -311,8 +328,49 @@ void setup_debug(void)
   pinMode(PIN_DB3, INPUT_PULLUP);
   const byte db0 = digitalRead(PIN_DB0);
   const byte db1 = digitalRead(PIN_DB1);
+  const byte db2 = digitalRead(PIN_DB2);
 
   drive_mode = (!db0) | ((!db1) << 1);
+
+  if (db2)
+    return;
+
+  /* Self operation mode */
+
+  for (; ; ) {
+    static int16_t idx = 0;
+    static _Bool is_bk = 0;
+    const _Bool do_fw = !digitalRead(PIN_DB1);
+    const _Bool do_bk = !digitalRead(PIN_DB0);
+
+    if (do_fw) {
+      if (!is_bk)
+        idx ++;
+      else { /* do_fw while is_bk */
+        if (idx <= 0)
+          is_bk = 0;
+        else
+          idx --;
+      }
+    } else if (do_bk) {
+      if (is_bk)
+        idx ++;
+      else { /* do_bk while !is_bk */
+        if (idx <= 0)
+          is_bk = !0;
+        else
+          idx --;
+      }
+    } else {
+      if (idx <= 0)
+        continue;
+      else
+        idx --;
+    }
+
+    rotate_is_back = is_bk;
+    do_step(idx);
+  }
 }
 
 void setup(void)
@@ -332,23 +390,6 @@ void setup(void)
   Wire.begin(ADDR);
   Wire.onReceive(callback_receive);
   Wire.onRequest(callback_request);
-}
-
-static void delayMicroseconds_coarse(const uint32_t us)
-{
-  int32_t c = us >> 7;
-  while (c-- > 0)
-    _delay_us(1UL << 7);
-}
-
-static inline void do_step(const int16_t idx)
-{
-  const int16_t n = sizeof(interval_table) / sizeof(*interval_table);
-  static _Bool stat = 0;
-
-  digitalWrite(LED_BUILTIN, stat = !stat);
-  delayMicroseconds_coarse(pgm_read_dword(&(interval_table[min(idx, n - 1)])));
-  do_drive(rotate_is_back);
 }
 
 void loop(void)
