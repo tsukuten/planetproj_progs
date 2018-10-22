@@ -20,7 +20,6 @@ class Motor(planetproj.PlanetProj):
             print('Running in dry-run mode')
             return
         self.i2c = planetproj.I2C()
-        #self.i2cs[i] = I2C.get_i2c_device(addrs[i])
 
     def do_rotate(self, n, step):
         self.cur_pos += step
@@ -29,8 +28,9 @@ class Motor(planetproj.PlanetProj):
             step = -step
         else:
             is_back = 0
+        assert(step >= 0)
         self._write_with_cs(n, planetproj.CMD_SET_ROTATE,
-                [is_back, step & 0xff, step >> 8])
+                [is_back, step & 0xff, step >> 8], wait = 1)
 
     def set_power(self, n, power):
         self._write_with_cs(n, planetproj.CMD_SET_POWER, [0, power])

@@ -97,6 +97,7 @@ class PlanetProj(object):
         self.i2c.set_addr(self.addrs[n])
         # xxx: Set timeout?
         while True:
+            # xxx: Don't need to write again IMHO.
             self.i2c.write(d)
             time.sleep(wait)
             if self._read_and_check_status():
