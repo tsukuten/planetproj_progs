@@ -5,6 +5,11 @@
 #include "planetproj.h"
 #include "motor.h"
 
+#define PIN_DB0 A0
+#define PIN_DB1 A1
+#define PIN_DB2 A2
+#define PIN_DB3 A3
+
 /*
  * PK267JDA is 1.8 degree/step.  So the maximum number of steps to round one
  * time is: 360/1.8*100=20000, so 16-bit number is required for step.
@@ -191,15 +196,16 @@ static void do_half_step_drive(const _Bool is_back)
   turn_prev = turn_cur;
 }
 
+static uint8_t drive_mode = 0;
+
 static inline void do_drive(const _Bool is_back)
 {
-#if 1
-  do_wave_drive(is_back);
-#elif 0
-  do_full_step_drive(is_back);
-#elif 0
-  do_half_step_drive(is_back);
-#endif
+  if (drive_mode == 0)
+    do_wave_drive(is_back);
+  if (drive_mode == 1)
+    do_full_step_drive(is_back);
+  if (drive_mode == 2)
+    do_half_step_drive(is_back);
 }
 
 static uint8_t recvbuf[64];
@@ -295,6 +301,20 @@ static void callback_request(void)
   sendbuf_count = 0;
 }
 
+void setup_debug(void)
+{
+  pinMode(LED_BUILTIN, OUTPUT);
+
+  pinMode(PIN_DB0, INPUT_PULLUP);
+  pinMode(PIN_DB1, INPUT_PULLUP);
+  pinMode(PIN_DB2, INPUT_PULLUP);
+  pinMode(PIN_DB3, INPUT_PULLUP);
+  const byte db0 = digitalRead(PIN_DB0);
+  const byte db1 = digitalRead(PIN_DB1);
+
+  drive_mode = (!db0) | ((!db1) << 1);
+}
+
 void setup(void)
 {
   pinMode(PIN_PWM_A, OUTPUT);
@@ -307,7 +327,7 @@ void setup(void)
   pinMode(PIN_B_POS_N, OUTPUT);
   pinMode(PIN_B_NEG_P, OUTPUT);
   pinMode(PIN_B_NEG_N, OUTPUT);
-  pinMode(LED_BUILTIN, OUTPUT);
+  setup_debug();
 
   Wire.begin(ADDR);
   Wire.onReceive(callback_receive);
