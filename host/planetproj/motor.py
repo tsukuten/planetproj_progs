@@ -68,14 +68,3 @@ class Motor(planetproj.PlanetProj):
         cur_degree = self.get_current_degree(n)
         step = int(round((degree - cur_degree) / self.degrees_per_step))
         self.do_rotate_step_relative(n, step)
-
-
-def main():
-    motor = Motor(dry_run = True)
-    motor.set_power(0, 255)
-    motor.set_power(1, 255)
-    motor.do_rotate(0, 100)
-    motor.do_rotate(1, 100)
-
-if __name__ == '__main__':
-    main()
