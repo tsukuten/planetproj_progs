@@ -339,6 +339,7 @@ void setup_debug(void)
 
   for (; ; ) {
     static int16_t idx = 0;
+    const int16_t n = sizeof(interval_table) / sizeof(*interval_table);
     static _Bool is_bk = 0;
     const _Bool do_fw = !digitalRead(PIN_DB1);
     const _Bool do_bk = !digitalRead(PIN_DB0);
@@ -369,6 +370,7 @@ void setup_debug(void)
     }
 
     rotate_is_back = is_bk;
+    idx = (idx > n) ? n - 1 : idx;
     do_step(idx);
   }
 }
