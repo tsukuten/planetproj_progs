@@ -5,6 +5,7 @@ CMD_STATUS = 0x10
 STATUS_SUCCESS = 0x00
 STATUS_WRONG_CHECKSUM = 0x01
 STATUS_UNKNOWN_COMMAND = 0x02
+STATUS_NOT_READY = 0x03
 
 CMD_SET_BRIGHTNESS = 0x20
 
@@ -76,16 +77,15 @@ class PlanetProj(object):
         if crc != crc_rcv:
             print('Checksum error: 0x%04x vs. 0x%04x for' % (crc, crc_rcv),
                     data[:-2])
-            return False
+            return (False, None)
         if data[0] != CMD_STATUS:
             print('Slave returned cmd=0x%02x instead of STATUS(0x%02x)' %
                     (data[0], CMD_STATUS))
-            return False
+            return (False, None)
         if data[1] != STATUS_SUCCESS:
             print('Slave status=0x%02x is not SUCCESS(0x%02x)' %
                     (data[1], STATUS_SUCCESS))
-            return False
-        return True
+        return (True, data[1])
 
     def _write_with_cs(self, n, register, data, wait = 0.1):
         d = [register]
@@ -95,14 +95,23 @@ class PlanetProj(object):
         if self.dry_run:
             return
         self.i2c.set_addr(self.addrs[n])
+        self.i2c.write(d)
         # xxx: Set timeout?
         while True:
-            # xxx: Don't need to write again IMHO.
-            self.i2c.write(d)
             time.sleep(wait)
-            if self._read_and_check_status():
+            (succ, stat) = self._read_and_check_status()
+            if succ and stat == STATUS_SUCCESS:
                 break
-            print('Status is not success; retrying...')
+            if (not succ) or stat == STATUS_WRONG_CHECKSUM:
+                print('Checksum is wrong; re-sending...')
+                self.i2c.write(d)
+            elif stat == STATUS_UNKNOWN_COMMAND:
+                print('Command is not recognized by slave; aborting')
+                os.abort()
+            elif stat == STATUS_NOT_READY:
+                print('Slave is just not ready; waiting...')
+            else:
+                os.abort()
 
 
 def main():
