@@ -1,9 +1,9 @@
 #include <stdarg.h>
+#include <avr/io.h>
 #include <avr/cpufunc.h>
 #include <Wire.h>
 #include "crc16.h"
 #include "planetproj.h"
-#include "motor.h"
 
 #define PIN_DB0 A0
 #define PIN_DB1 A1
@@ -36,65 +36,49 @@
 #define PIN_B_NEG_P 6
 #define PIN_B_NEG_N 7
 
-static const unsigned pins[2][2][2] = {
-  {
-    {
-      PIN_A_POS_P,
-      PIN_A_POS_N
-    },
-    {
-      PIN_A_NEG_P,
-      PIN_A_NEG_N
-    }
-  },
-  {
-    {
-      PIN_B_POS_P,
-      PIN_B_POS_N
-    },
-    {
-      PIN_B_NEG_P,
-      PIN_B_NEG_N
-    }
-  }
-};
+#define MOTOR_COIL_A 0
+#define MOTOR_COIL_B 1
 
-static void motor_set_pulse_core(const enum motor_coil coil,
-    const enum motor_polar polar, const enum motor_pulse pulse)
+#define MOTOR_POLAR_POS 0
+#define MOTOR_POLAR_NEG 1
+
+#define MOTOR_PULSE_POS 0
+#define MOTOR_PULSE_NEG 1
+#define MOTOR_PULSE_NTL 2
+
+static inline uint8_t motor_set_pulse_core(const unsigned coil,
+    const unsigned polar, const unsigned pulse)
 {
-  unsigned pin_p, pin_n;
-
-  pin_p = pins[coil][polar][MOTOR_CHANNEL_P];
-  pin_n = pins[coil][polar][MOTOR_CHANNEL_N];
+#define PIN_P ((coil == MOTOR_COIL_A) ? \
+    ((polar == MOTOR_POLAR_POS) ? PIN_A_POS_P : PIN_A_NEG_P) : \
+    ((polar == MOTOR_POLAR_POS) ? PIN_B_POS_P : PIN_B_NEG_P))
+#define PIN_N ((coil == MOTOR_COIL_A) ? \
+    ((polar == MOTOR_POLAR_POS) ? PIN_A_POS_N : PIN_A_NEG_N) : \
+    ((polar == MOTOR_POLAR_POS) ? PIN_B_POS_N : PIN_B_NEG_N))
 
   /*
    * pin_p: Pull to HIGH to turn on.
    * pin_n: Pull to LOW to turn on.
    */
-  switch (pulse) {
-    case MOTOR_PULSE_POS:
-      digitalWrite(pin_n, HIGH); // n: off
-      digitalWrite(pin_p, HIGH); // p: on
-      break;
-    case MOTOR_PULSE_NEG:
-      digitalWrite(pin_p, LOW);  // p: off
-      digitalWrite(pin_n, LOW);  // n: on
-      break;
-    case MOTOR_PULSE_NTL:
-      digitalWrite(pin_p, LOW);  // p: off
-      digitalWrite(pin_n, HIGH); // n: off
-      break;
-    default:
-      return;
-  }
+  /*
+   * pulse_pos: p=on  n=off
+   * pulse_neg: p=off n=on
+   * pulse_ntl: p=off n=off
+   */
+  return (pulse == MOTOR_PULSE_POS) ? (_BV(PIN_P) | _BV(PIN_N)) :
+      ((pulse == MOTOR_PULSE_NEG) ? 0 : _BV(PIN_N));
+
+#undef PIN_P
+#undef PIN_N
 }
 
 #define motor_set_pulse(apos, aneg, bpos, bneg) \
   do { \
-    motor_set_pulse_core(MOTOR_COIL_A, MOTOR_POLAR_POS, MOTOR_PULSE_##apos); \
-    motor_set_pulse_core(MOTOR_COIL_A, MOTOR_POLAR_NEG, MOTOR_PULSE_##aneg); \
-    motor_set_pulse_core(MOTOR_COIL_B, MOTOR_POLAR_POS, MOTOR_PULSE_##bpos); \
-    motor_set_pulse_core(MOTOR_COIL_B, MOTOR_POLAR_NEG, MOTOR_PULSE_##bneg); \
+    PORTD = \
+          motor_set_pulse_core(MOTOR_COIL_A, MOTOR_POLAR_POS, MOTOR_PULSE_##apos) \
+        | motor_set_pulse_core(MOTOR_COIL_A, MOTOR_POLAR_NEG, MOTOR_PULSE_##aneg) \
+        | motor_set_pulse_core(MOTOR_COIL_B, MOTOR_POLAR_POS, MOTOR_PULSE_##bpos) \
+        | motor_set_pulse_core(MOTOR_COIL_B, MOTOR_POLAR_NEG, MOTOR_PULSE_##bneg); \
   } while (0)
 
 static void do_wave_drive(const _Bool is_back)
@@ -311,9 +295,8 @@ static void delayMicroseconds_coarse(const uint32_t us)
 static inline void do_step(const int16_t idx)
 {
   const int16_t n = sizeof(interval_table) / sizeof(*interval_table);
-  static _Bool stat = 0;
 
-  digitalWrite(LED_BUILTIN, stat = !stat);
+  PINB = _BV(5);
   delayMicroseconds_coarse(pgm_read_dword(&(interval_table[min(idx, n - 1)])));
   do_drive(rotate_is_back);
 }
