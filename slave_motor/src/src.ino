@@ -10,6 +10,8 @@
 #define PIN_DB2 A2
 #define PIN_DB3 A3
 
+#define PIN_n_PS_ON 8
+
 /*
  * PK267JDA is 1.8 degree/step.  So the maximum number of steps to round one
  * time is: 360/1.8*100=20000, so 16-bit number is required for step.
@@ -318,6 +320,12 @@ static inline void do_step(const int16_t idx)
   do_drive(rotate_is_back);
 }
 
+static void ps_init(void)
+{
+  _delay_ms(1000);
+  pinMode(PIN_n_PS_ON, OUTPUT);
+}
+
 void setup_debug(void)
 {
   pinMode(LED_BUILTIN, OUTPUT);
@@ -380,6 +388,7 @@ void setup_debug(void)
 
 void setup(void)
 {
+  ps_init();
   pinMode(PIN_PWM_A, OUTPUT);
   pinMode(PIN_PWM_B, OUTPUT);
   pinMode(PIN_A_POS_P, OUTPUT);
