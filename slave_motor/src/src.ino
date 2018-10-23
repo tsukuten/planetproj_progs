@@ -337,6 +337,9 @@ void setup_debug(void)
 
   /* Self operation mode */
 
+  analogWrite(PIN_PWM_A, 255);
+  analogWrite(PIN_PWM_B, 255);
+
   for (; ; ) {
     static int16_t idx = 0;
     const int16_t n = sizeof(interval_table) / sizeof(*interval_table);
