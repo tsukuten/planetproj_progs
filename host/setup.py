@@ -6,7 +6,7 @@ from distutils.core import setup
 setup(
         name = 'planetproj',
         packages = ['planetproj'],
-        version = "0.0.0",
+        version = "1.0.0",
         description = 'Host library for the new planetarium projector',
         author = 'Sugizaki Yukimasa',
         author_email = 'i.can.speak.c.and.basic@gmail.com',
