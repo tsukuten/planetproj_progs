@@ -305,8 +305,10 @@ static inline void do_step(const int16_t idx)
 
 static void ps_init(void)
 {
+#if ADDR == ADDR_MOTOR_1
   _delay_ms(1000);
   pinMode(PIN_n_PS_ON, OUTPUT);
+#endif /* ADDR == ADDR_MOTOR_1 */
 }
 
 void setup_debug(void)
