@@ -32,7 +32,7 @@ print(LED.get_brightness(2))
 ### `set_power(n, power)`
 - `n`: *int* *[0,1]*
 - `power`: *float* *[0, 1]*
-- モータ*n*の出力を最大値の*power*倍にする。
+- モーター*n*の出力を最大値の*power*倍にする。
 
 ### `set_zero_position(n)`
 - `n`: *int* *[0,1]*
