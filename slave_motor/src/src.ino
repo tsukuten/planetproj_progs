@@ -203,7 +203,7 @@ static volatile _Bool doing_rotate = 0;
 static volatile _Bool rotate_is_back = 0;
 static volatile uint16_t rotate_step = 0;
 
-static int16_t idx_max = sizeof(interval_table) / sizeof(*interval_table);
+static int16_t idx_max = sizeof(interval_table) / sizeof(*interval_table) - 1;
 
 
 static void prepare_sendbuf(const size_t count, ...)
@@ -241,7 +241,7 @@ static void process_set_power(const uint8_t polar, const uint8_t power)
 static void process_set_max_idx(const int16_t v)
 {
   const int16_t n = sizeof(interval_table) / sizeof(*interval_table);
-  idx_max = max(0, min(v, n));
+  idx_max = max(0, min(v, n-1));
   prepare_sendbuf(2, CMD_STATUS, STATUS_SUCCESS);
 }
 
@@ -311,7 +311,7 @@ static inline void do_step(const int16_t idx)
 {
   PINB = _BV(5);
   delayMicroseconds_coarse(
-      pgm_read_dword(&(interval_table[min(idx, idx_max - 1)])));
+      pgm_read_dword(&(interval_table[min(idx, idx_max)])));
   do_drive(rotate_is_back);
 }
 

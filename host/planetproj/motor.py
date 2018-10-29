@@ -30,6 +30,12 @@ class Motor(planetproj.PlanetProj):
         self._write_with_cs(n, planetproj.CMD_SET_POWER,
                 [1, int(round(power * 255))])
 
+    def set_max_idx(self, n, max_idx):
+        assert(0 <= n < self.num_devs)
+        assert(0 <= max_idx < 2**16)
+        self._write_with_cs(n, planetproj.CMD_SET_MAX_IDX,
+                [max_idx & 0xff, max_idx >> 8])
+
     def set_zero_position(self, n):
         assert(0 <= n < self.num_devs)
         self.cur_pos[n] = 0
