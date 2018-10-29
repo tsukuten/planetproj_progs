@@ -4,7 +4,7 @@
 /slave_motor/src/interval_table_d*.h
 
 
-# Created by https://www.gitignore.io/api/vim,git,macos,linux,emacs,python,windows
+# Created by https://www.gitignore.io/api/vim,git,macos,linux,emacs,python,windows,platformio
 
 ### Emacs ###
 # -*- mode: gitignore; -*-
@@ -109,6 +109,12 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
+
+### PlatformIO ###
+.pioenvs
+.piolibdeps
+.clang_complete
+.gcc-flags.json
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
@@ -281,4 +287,4 @@ $RECYCLE.BIN/
 *.lnk
 
 
-# End of https://www.gitignore.io/api/vim,git,macos,linux,emacs,python,windows
+# End of https://www.gitignore.io/api/vim,git,macos,linux,emacs,python,windows,platformio
