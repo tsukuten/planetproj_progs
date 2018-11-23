@@ -15,8 +15,7 @@ $ cd planetproj_progs/
 ```
 $ cd host/
 $ pip install -r requirements.txt
-$ python setup.py build
-$ sudo python setup.py install
+$ pip install .
 ```
 
 ### Slave
