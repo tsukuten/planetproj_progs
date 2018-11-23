@@ -52,7 +52,8 @@ class PlanetProj(object):
     dry_run = False
 
     def _to_le_array(self, v, n = None):
-        assert(v >= 0)
+        if v < 0:
+            raise ValueError('v is negative')
         a = []
         if n is None:
             while v != 0:
@@ -89,7 +90,7 @@ class PlanetProj(object):
                     (data[1], STATUS_SUCCESS))
         return (True, data[1])
 
-    def _write_with_cs(self, n, register, data, wait = 0.1):
+    def _write_with_cs(self, n, register, data, wait = 0.1, max_loops = 100):
         d = [register]
         d.extend(data)
         d.extend(self._to_le_array(self._crc16(d), n = 2))
@@ -98,22 +99,22 @@ class PlanetProj(object):
             return
         self.i2c.set_addr(self.addrs[n])
         self.i2c.write(d)
-        # xxx: Set timeout?
-        while True:
+        for i in range(max_loops):
             time.sleep(wait)
             (succ, stat) = self._read_and_check_status()
             if succ and stat == STATUS_SUCCESS:
-                break
+                return
             if (not succ) or stat == STATUS_WRONG_CHECKSUM:
                 print('Checksum is wrong; re-sending...')
                 self.i2c.write(d)
             elif stat == STATUS_UNKNOWN_COMMAND:
-                print('Command is not recognized by slave; aborting')
-                os.abort()
+                raise IOError('Command is not recognized by slave')
             elif stat == STATUS_NOT_READY:
                 print('Slave is just not ready; waiting...')
             else:
-                os.abort()
+                raise IOError('Unknown successful stat: 0x%02x' % stat)
+        raise IOError('Timeout (max_loops=%d) occured while waiting for slave' %
+                max_loops)
 
 
 def main():

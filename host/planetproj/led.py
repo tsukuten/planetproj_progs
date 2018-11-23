@@ -12,9 +12,12 @@ class LED(planetproj.PlanetProj):
     def __init__(self, addrs = [planetproj.ADDR_LED_1, planetproj.ADDR_LED_2],
             num_leds_per_dev = 6, dry_run = False):
 
-        assert(len(addrs) != 0)
+        num_devs = len(addrs)
+        if num_devs < 1:
+            raise ValueError('num_devs (%d) is less than 1' % num_devs)
+
         self.dry_run = dry_run
-        self.num_devs = len(addrs)
+        self.num_devs = num_devs
         self.addrs = addrs
         self.num_leds_per_dev = num_leds_per_dev
         self.cur_brightness = \
@@ -30,7 +33,7 @@ class LED(planetproj.PlanetProj):
     def set_brightness_multi(self, t):
         ds = [[] for i in range(self.num_devs)]
         for (led, brightness) in t:
-            assert(0 <= brightness <= 1)
+            raise ValueError('brightness is not in range: [0,1]')
             self.cur_brightness[led] = brightness
             ds[led // self.num_leds_per_dev].extend(
                     [led % self.num_leds_per_dev, int(round(brightness * 255))])

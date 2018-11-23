@@ -24,12 +24,15 @@ class Motor(planetproj.PlanetProj):
             degree_range = [[-pi, pi], [-inf, inf]], dry_run = False):
 
         num_devs = len(addrs)
-        assert(num_devs > 0)
-        assert(len(reduction_ratios) == num_devs)
-        assert(len(degree_range) == num_devs)
+        if num_devs < 1:
+            raise ValueError('num_devs (%d) is less than 1' % num_devs)
+        if len(reduction_ratios) != num_devs:
+            raise ValueError('reduction_ratios is not specified for all slaves')
+        if len(degree_range) != num_devs:
+            raise ValueError('degree_range is not specified for all slaves')
         for t in degree_range:
-            assert(len(t) == 2)
-            assert(t[0] <= 0 <= t[1])
+            if len(t) != 2 or not(t[0] <= 0 <= t[1]):
+                raise ValueError('degree_range is ill-formatted')
 
         self.dry_run = dry_run
         self.num_devs = num_devs
@@ -53,34 +56,49 @@ class Motor(planetproj.PlanetProj):
         # XXX: Setup max_idx and idx_step for all motors.
 
     def set_power(self, n, power):
-        assert(0 <= n < self.num_devs)
-        assert(0 <= power <= 1)
+        if not(0 <= n < self.num_devs):
+            raise ValueError('slave number is not in range: [0,%d)' %
+                    self.num_devs)
+        if not(0 <= power <= 1):
+            raise ValueError('power is not in range: [0, 1]')
         self._write_with_cs(n, planetproj.CMD_SET_POWER,
                 [0, int(round(power * 255))])
         self._write_with_cs(n, planetproj.CMD_SET_POWER,
                 [1, int(round(power * 255))])
 
     def set_max_idx(self, n, max_idx):
-        assert(0 <= n < self.num_devs)
-        assert(0 <= max_idx < (1<<16))
+        if not(0 <= n < self.num_devs):
+            raise ValueError('slave number is not in range: [0,%d)' %
+                    self.num_devs)
+        if not(0 <= max_idx < (1<<16)):
+            raise ValueError('max_idx is not an unsigned 16-bit integer')
         self._write_with_cs(n, planetproj.CMD_SET_MAX_IDX,
                 [max_idx & 0xff, max_idx >> 8])
 
     def set_idx_step(self, n, idx_step):
-        assert(0 <= n < self.num_devs)
-        assert(1 <= idx_step < (1<<8))
+        if not(0 <= n < self.num_devs):
+            raise ValueError('slave number is not in range: [0,%d)' %
+                    self.num_devs)
+        if not(1 <= idx_step < (1<<8)):
+            raise ValueError('idx_step is not an unsigned 8-bit integer')
         self._write_with_cs(n, planetproj.CMD_SET_IDX_STEP, [idx_step])
 
     def set_zero_position(self, n):
-        assert(0 <= n < self.num_devs)
+        if not(0 <= n < self.num_devs):
+            raise ValueError('slave number is not in range: [0,%d)' %
+                    self.num_devs)
         self.cur_pos[n] = 0
 
     def get_current_degree(self, n):
-        assert(0 <= n < self.num_devs)
+        if not(0 <= n < self.num_devs):
+            raise ValueError('slave number is not in range: [0,%d)' %
+                    self.num_devs)
         return self._step_to_degree(self.cur_pos[n]) / self.reduction_ratios[n]
 
     def do_rotate_step_relative(self, n, step):
-        assert(0 <= n < self.num_devs)
+        if not(0 <= n < self.num_devs):
+            raise ValueError('slave number is not in range: [0,%d)' %
+                    self.num_devs)
         if step == 0:
             return
         if not (self.step_range[n][0] <= self.cur_pos[n] + step <=
@@ -100,14 +118,18 @@ class Motor(planetproj.PlanetProj):
                 [is_back, step & 0xff, step >> 8], wait = 1)
 
     def do_rotate_degree_relative(self, n, degree):
-        assert(0 <= n < self.num_devs)
+        if not(0 <= n < self.num_devs):
+            raise ValueError('slave number is not in range: [0,%d)' %
+                    self.num_devs)
         if degree == 0:
             return
         step = self._degree_to_step(degree * self.reduction_ratios[n])
         self.do_rotate_step_relative(n, step)
 
     def do_rotate_degree_absolute(self, n, degree):
-        assert(0 <= n < self.num_devs)
+        if not(0 <= n < self.num_devs):
+            raise ValueError('slave number is not in range: [0,%d)' %
+                    self.num_devs)
         if degree == 0:
             return
         degree_rel = degree - self.get_current_degree(n)
