@@ -14,7 +14,6 @@ $ cd planetproj_progs/
 
 ```
 $ cd host/
-$ pip install -r requirements.txt
 $ pip install .
 ```
 
