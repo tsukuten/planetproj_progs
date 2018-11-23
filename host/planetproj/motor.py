@@ -34,10 +34,11 @@ class Motor(planetproj.PlanetProj):
             assert(len(t) == 2)
             assert(t[0] <= 0 <= t[1])
         a = []
-        for i in range(len(degree_range)):
+        for i in range(self.num_devs):
             a.append([])
             for v in degree_range[i]:
-                a[i].append(self._degree_to_step(v, conv = lambda x: x))
+                a[i].append(self._degree_to_step(
+                        v * self.reduction_ratios[i], conv = lambda x: x))
         self.step_range = a
 
         if self.dry_run:
