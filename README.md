@@ -21,8 +21,11 @@ $ sudo python setup.py install
 
 ### Slave
 
-Open `slave_led/` or `slave_motor/` in Arduino IDE and burn them, though you
-don't normally need to do this.
+```
+$ cd slave_xxx/
+$ platformio run
+$ platformio run --target=upload
+```
 
 
 ## How to use
