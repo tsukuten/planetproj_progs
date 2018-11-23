@@ -4,13 +4,12 @@
 #include <Wire.h>
 #include "crc16.h"
 #include "planetproj.h"
+#include "interval_table.h"
 
 #define PIN_DB0 A0
 #define PIN_DB1 A1
 #define PIN_DB2 A2
 #define PIN_DB3 A3
-
-#define PIN_n_PS_ON 8
 
 /*
  * PK267JDA is 1.8 degree/step.  So the maximum number of steps to round one
@@ -18,10 +17,9 @@
  */
 
 #if 1
-#include "interval_table_d100.h"
 #define ADDR ADDR_MOTOR_1
+#define PIN_n_PS_ON 8
 #else
-#include "interval_table_d10.h"
 #define ADDR ADDR_MOTOR_2
 #endif
 
@@ -203,6 +201,7 @@ static volatile _Bool doing_rotate = 0;
 static volatile _Bool rotate_is_back = 0;
 static volatile uint16_t rotate_step = 0;
 
+static int16_t idx_step = 1;
 static int16_t idx_max = sizeof(interval_table) / sizeof(*interval_table) - 1;
 
 
@@ -245,6 +244,12 @@ static void process_set_max_idx(const int16_t v)
   prepare_sendbuf(2, CMD_STATUS, STATUS_SUCCESS);
 }
 
+static void process_set_idx_step(const uint8_t v)
+{
+  idx_step = v;
+  prepare_sendbuf(2, CMD_STATUS, STATUS_SUCCESS);
+}
+
 static void callback_receive(const int n)
 {
   int i;
@@ -278,6 +283,9 @@ static void callback_receive(const int n)
     case CMD_SET_MAX_IDX:
       process_set_max_idx(
           ((int16_t) recvbuf[1]) | (((int16_t) recvbuf[2]) << 8));
+      break;
+    case CMD_SET_IDX_STEP:
+      process_set_idx_step(recvbuf[1]);
       break;
     default:
       prepare_sendbuf(2, CMD_STATUS, STATUS_UNKNOWN_COMMAND);
@@ -412,9 +420,9 @@ void loop(void)
   int16_t idx;
   const int16_t step_half = rotate_step >> 1;
 
-  for (i = 0, idx = 0; i < step_half; i ++, idx ++)
+  for (i = 0, idx = 0; i < step_half; i ++, idx += idx_step)
     do_step(idx);
-  for (i = 0, idx -= 1; i < step_half; i ++, idx --)
+  for (i = 0, idx -= idx_step; i < step_half; i ++, idx -= idx_step)
     do_step(idx);
   if (rotate_step & 1)
     do_step(0);

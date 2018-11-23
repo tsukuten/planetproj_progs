@@ -3,7 +3,7 @@
 
 T0 = 100e-3
 T_min = 2.5e-3
-a = 100
+a = 20
 
 
 import sys
@@ -24,19 +24,18 @@ if n * (32/8) / 1024 > 32:
     exit(1)
 
 
-print('Writing to interval_table_d10.h and interval_table_d100.h')
-for (d, m) in [(10, 10), (100, 1)]:
-    sys.stdout = open('interval_table_d%d.h' % d, 'w')
-    print('#ifndef INTERVAL_TABLE_D%d_H_' % d)
-    print('#define INTERVAL_TABLE_D%d_H_' % d)
-    print()
-    print('#include <stdint.h>')
-    print('#include <avr/pgmspace.h>')
-    print()
-    print('static const uint32_t interval_table[%d] PROGMEM = {' % n)
-    for T in Ts:
-        print('    %d,' % round(T * m))
-    print('};')
-    print()
-    print('#endif /* INTERVAL_TABLE_D%d_H_ */' % d)
-    sys.stdout.close()
+print('Writing to interval_table.h')
+sys.stdout = open('interval_table.h', 'w')
+print('#ifndef INTERVAL_TABLE_H_')
+print('#define INTERVAL_TABLE_H_')
+print()
+print('#include <stdint.h>')
+print('#include <avr/pgmspace.h>')
+print()
+print('static const uint32_t interval_table[%d] PROGMEM = {' % n)
+for T in Ts:
+    print('    %d,' % round(T))
+print('};')
+print()
+print('#endif /* INTERVAL_TABLE_H_ */')
+sys.stdout.close()
