@@ -29,6 +29,13 @@ print(LED.get_brightness(2))
 
 ## `class Motor`
 
+### `__init__(degree_range = [[-pi, pi], [-inf, inf]])`
+- `degree_range`: [[motor*0*min, motor*0*max], ..., [motor*n*min, motor*n*max]]
+    - motor*n*{min,max}: *numeric*
+    - *n*個目のモーター (motor*n*) の可動域をmotor*n*min以上motor*n*max以下 (単位:ラジアン) に制限する。
+    - デフォルトではモーター2つということです。
+    - _**`class Motor`は可動域を超えて動くよう指示されると`ValueError`例外を排出します**_。
+
 ### `set_power(n, power)`
 - `n`: *int* *[0,1]*
 - `power`: *float* *[0, 1]*
@@ -67,17 +74,19 @@ print(LED.get_brightness(2))
 ```python
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 import planetproj
 from math import pi
 
 Motor = planetproj.Motor()
 Motor.set_power(0, 1)
 Motor.set_power(1, 0.8)
-Motor.do_rotate_degree_relative(0, 2*pi)
+Motor.do_rotate_degree_relative(0, pi/3)
 Motor.do_rotate_degree_relative(1, -pi)
-print(Motor.get_current_degree(0))
+print('Current degree of motor #0:', Motor.get_current_degree(0))
 Motor.set_zero_position(0)
 Motor.do_rotate_degree_absolute(0, 0)
 Motor.do_rotate_degree_absolute(1, pi/4)
-print(Motor.get_current_degree(0))
+print('Current degree of motor #0:', Motor.get_current_degree(0))
 ```
