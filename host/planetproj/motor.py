@@ -22,17 +22,22 @@ class Motor(planetproj.PlanetProj):
             degrees_per_step = 1.8 * (pi / 180),
             reduction_ratios = [100, 10],
             degree_range = [[-pi, pi], [-inf, inf]], dry_run = False):
-        assert(len(addrs) != 0)
+
+        num_devs = len(addrs)
+        assert(num_devs > 0)
+        assert(len(reduction_ratios) == num_devs)
+        assert(len(degree_range) == num_devs)
+        for t in degree_range:
+            assert(len(t) == 2)
+            assert(t[0] <= 0 <= t[1])
+
         self.dry_run = dry_run
-        self.num_devs = len(addrs)
+        self.num_devs = num_devs
         self.addrs = addrs
         self.degrees_per_step = degrees_per_step
         self.reduction_ratios = reduction_ratios
         self.cur_pos = [0 for i in range(self.num_devs)]
 
-        for t in degree_range:
-            assert(len(t) == 2)
-            assert(t[0] <= 0 <= t[1])
         a = []
         for i in range(self.num_devs):
             a.append([])
