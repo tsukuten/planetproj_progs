@@ -33,7 +33,8 @@ class LED(planetproj.PlanetProj):
     def set_brightness_multi(self, t):
         ds = [[] for i in range(self.num_devs)]
         for (led, brightness) in t:
-            raise ValueError('brightness is not in range: [0,1]')
+            if not(0 <= brightness <= 1):
+                raise ValueError('brightness is not in range: [0,1]')
             self.cur_brightness[led] = brightness
             ds[led // self.num_leds_per_dev].extend(
                     [led % self.num_leds_per_dev, int(round(brightness * 255))])
