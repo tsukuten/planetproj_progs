@@ -130,7 +130,7 @@ class Motor(planetproj.PlanetProj):
         if not(0 <= n < self.num_devs):
             raise ValueError('slave number is not in range: [0,%d)' %
                     self.num_devs)
-        if degree == 0:
-            return
         degree_rel = degree - self.get_current_degree(n)
+        if degree_rel == 0:
+            return
         self.do_rotate_degree_relative(n, degree_rel)
