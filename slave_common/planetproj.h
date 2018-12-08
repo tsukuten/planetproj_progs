@@ -15,6 +15,7 @@
 #define CMD_SET_POWER 0x31
 #define CMD_SET_MAX_IDX 0x32
 #define CMD_SET_IDX_STEP 0x33
+#define CMD_SET_DRIVE_MODE 0x34
 
 
 #define ADDR_LED_1 0x30

@@ -181,15 +181,24 @@ static void do_half_step_drive(const _Bool is_back)
 }
 
 static uint8_t drive_mode = 0;
+static _Bool drive_mode_locked = 0;
 
 static inline void do_drive(const _Bool is_back)
 {
-  if (drive_mode == 0)
-    do_wave_drive(is_back);
-  if (drive_mode == 1)
-    do_full_step_drive(is_back);
-  if (drive_mode == 2)
-    do_half_step_drive(is_back);
+  drive_mode_locked = !0;
+  _MemoryBarrier();
+
+  switch (drive_mode) {
+    case 0:
+      do_wave_drive(is_back);
+      break;
+    case 1:
+      do_full_step_drive(is_back);
+      break;
+    case 2:
+      do_half_step_drive(is_back);
+      break;
+  }
 }
 
 static uint8_t recvbuf[64];
@@ -250,6 +259,17 @@ static void process_set_idx_step(const uint8_t v)
   prepare_sendbuf(2, CMD_STATUS, STATUS_SUCCESS);
 }
 
+static void process_set_drive_mode(const uint8_t v)
+{
+  if (drive_mode_locked) {
+    prepare_sendbuf(2, CMD_STATUS, STATUS_INVALID_VALUE);
+    return;
+  }
+
+  drive_mode = v;
+  prepare_sendbuf(2, CMD_STATUS, STATUS_SUCCESS);
+}
+
 static void callback_receive(const int n)
 {
   int i;
@@ -286,6 +306,9 @@ static void callback_receive(const int n)
       break;
     case CMD_SET_IDX_STEP:
       process_set_idx_step(recvbuf[1]);
+      break;
+    case CMD_SET_DRIVE_MODE:
+      process_set_drive_mode(recvbuf[1]);
       break;
     default:
       prepare_sendbuf(2, CMD_STATUS, STATUS_UNKNOWN_COMMAND);

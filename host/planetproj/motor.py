@@ -83,6 +83,14 @@ class Motor(planetproj.PlanetProj):
             raise ValueError('idx_step is not an unsigned 8-bit integer')
         self._write_with_cs(n, planetproj.CMD_SET_IDX_STEP, [idx_step])
 
+    def set_drive_mode(self, n, mode):
+        if not(0 <= n < self.num_devs):
+            raise ValueError('slave number is not in range: [0,%d)' %
+                    self.num_devs)
+        if not(1 <= mode < (1<<8)):
+            raise ValueError('mode is not an unsigned 8-bit integer')
+        self._write_with_cs(n, planetproj.CMD_SET_DRIVE_MODE, [mode])
+
     def set_zero_position(self, n):
         if not(0 <= n < self.num_devs):
             raise ValueError('slave number is not in range: [0,%d)' %
