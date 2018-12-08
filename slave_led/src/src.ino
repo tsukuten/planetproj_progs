@@ -10,20 +10,24 @@
 #define ADDR ADDR_LED_2
 #endif
 
-#define PIN_LED0 6
-#define PIN_LED1 5
-#define PIN_LED2 9
-#define PIN_LED3 10
-#define PIN_LED4 11
-#define PIN_LED5 3
+#define NUM_LEDS 6
 
-static int PIN_LEDS[6] = {
-  PIN_LED0,
-  PIN_LED1,
-  PIN_LED2,
-  PIN_LED3,
-  PIN_LED4,
-  PIN_LED5,
+/*
+ * 1 - 5 - PD5 - D5
+ * 2 - 4 - PD3 - D3
+ * 3 - 6 - PD6 - D6
+ * 4 - 2 - PB2 - D10
+ * 5 - 3 - PB3 - D11
+ * 6 - 1 - PB1 - D9
+ */
+
+static const int led_to_pin[NUM_LEDS] = {
+   5,
+   3,
+   6,
+  10,
+  11,
+   9,
 };
 
 
@@ -31,6 +35,9 @@ static uint8_t recvbuf[64];
 static uint8_t sendbuf[64];
 static size_t sendbuf_count = 0;
 static volatile _Bool is_sendbuf_ready = 0;
+
+static volatile _Bool changing_brightness = 0;
+static volatile uint8_t brightnesses[NUM_LEDS] = {0};
 
 
 static void prepare_sendbuf(const size_t count, ...)
@@ -52,12 +59,22 @@ static void prepare_sendbuf(const size_t count, ...)
 static void process_set_brightness(const int n)
 {
   int i;
+  uint8_t brightnesses_tmp[NUM_LEDS];
+
+  memcpy((void*) brightnesses_tmp, (void*) brightnesses, sizeof(brightnesses));
   for (i = 0; i < n; i ++) {
-    uint8_t led        = recvbuf[1 + (i << 1) + 0];
-    uint8_t brightness = recvbuf[1 + (i << 1) + 1];
-    analogWrite(PIN_LEDS[led], brightness);
+    const uint8_t led        = recvbuf[1 + (i << 1) + 0];
+    const uint8_t brightness = recvbuf[1 + (i << 1) + 1];
+    if (led >= NUM_LEDS) {
+      prepare_sendbuf(2, CMD_STATUS, STATUS_UNKNOWN_COMMAND);
+      return;
+    }
+    brightnesses_tmp[led] = brightness;
   }
-  prepare_sendbuf(2, CMD_STATUS, STATUS_SUCCESS);
+  memcpy((void*) brightnesses, (void*) brightnesses_tmp, sizeof(brightnesses));
+  _MemoryBarrier();
+  changing_brightness = !0;
+  /* Not preparing sendbuf. */
 }
 
 static void callback_receive(const int n)
@@ -104,12 +121,9 @@ static void callback_request(void)
 
 void setup(void)
 {
-  pinMode(PIN_LED0, OUTPUT);
-  pinMode(PIN_LED1, OUTPUT);
-  pinMode(PIN_LED2, OUTPUT);
-  pinMode(PIN_LED3, OUTPUT);
-  pinMode(PIN_LED4, OUTPUT);
-  pinMode(PIN_LED5, OUTPUT);
+  int i;
+  for (i = 0; i < NUM_LEDS; i ++)
+    pinMode(led_to_pin[i], OUTPUT);
 
   Wire.begin(ADDR);
   Wire.onReceive(callback_receive);
@@ -118,4 +132,15 @@ void setup(void)
 
 void loop(void)
 {
+  if (!changing_brightness)
+    return;
+
+  int i;
+  for (i = 0; i < NUM_LEDS; i ++)
+    analogWrite(led_to_pin[i], brightnesses[i]);
+
+  prepare_sendbuf(2, CMD_STATUS, STATUS_SUCCESS);
+
+  _MemoryBarrier();
+  changing_brightness = 0;
 }
