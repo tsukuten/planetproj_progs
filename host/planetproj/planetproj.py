@@ -6,6 +6,7 @@ STATUS_SUCCESS = 0x00
 STATUS_WRONG_CHECKSUM = 0x01
 STATUS_UNKNOWN_COMMAND = 0x02
 STATUS_NOT_READY = 0x03
+STATUS_INVALID_VALUE = 0x04
 
 CMD_SET_BRIGHTNESS = 0x20
 
@@ -111,6 +112,8 @@ class PlanetProj(object):
                 raise IOError('Command is not recognized by slave')
             elif stat == STATUS_NOT_READY:
                 print('Slave is just not ready; waiting...')
+            elif stat == STATUS_INVALID_VALUE:
+                raise IOError('Value is not recognized by slave')
             else:
                 raise IOError('Unknown successful stat: 0x%02x' % stat)
         raise IOError('Timeout (max_loops=%d) occured while waiting for slave' %
