@@ -96,7 +96,7 @@ static void callback_receive(const int n)
 
   switch (recvbuf[0]) {
     case CMD_SET_BRIGHTNESS:
-      process_set_brightness(n >> 1);
+      process_set_brightness((n - 2) >> 1);
       break;
     default:
       prepare_sendbuf(2, CMD_STATUS, STATUS_UNKNOWN_COMMAND);
