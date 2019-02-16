@@ -20,7 +20,7 @@ class Motor(planetproj.PlanetProj):
     def __init__(self,
             addrs = [planetproj.ADDR_MOTOR_1, planetproj.ADDR_MOTOR_2],
             degrees_per_step = 1.8 * (pi / 180),
-            reduction_ratios = [100, 10],
+            reduction_ratios = [10, 100],
             degree_range = [[-pi, pi], [-inf, inf]], dry_run = False):
 
         num_devs = len(addrs)
