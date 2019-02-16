@@ -87,7 +87,7 @@ class Motor(planetproj.PlanetProj):
         if not(0 <= n < self.num_devs):
             raise ValueError('slave number is not in range: [0,%d)' %
                     self.num_devs)
-        if not(1 <= mode < (1<<8)):
+        if not(0 <= mode < (1<<8)):
             raise ValueError('mode is not an unsigned 8-bit integer')
         self._write_with_cs(n, planetproj.CMD_SET_DRIVE_MODE, [mode])
 
