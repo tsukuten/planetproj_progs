@@ -42,13 +42,12 @@ static volatile uint8_t brightnesses[NUM_LEDS] = {0};
 
 static void prepare_sendbuf(const size_t count, ...)
 {
-  size_t i;
   va_list ap;
   is_sendbuf_ready = 0;
   _MemoryBarrier();
   sendbuf_count = count + 2;
   va_start(ap, count);
-  for (i = 0; i < count; i ++)
+  for (size_t i = 0; i < count; i ++)
     sendbuf[i] = va_arg(ap, int);
   crc16_append(sendbuf, count);
   _MemoryBarrier();
@@ -58,11 +57,10 @@ static void prepare_sendbuf(const size_t count, ...)
 
 static void process_set_brightness(const int n)
 {
-  int i;
   uint8_t brightnesses_tmp[NUM_LEDS];
 
   memcpy((void*) brightnesses_tmp, (void*) brightnesses, sizeof(brightnesses));
-  for (i = 0; i < n; i ++) {
+  for (int i = 0; i < n; i ++) {
     const uint8_t led        = recvbuf[1 + (i << 1) + 0];
     const uint8_t brightness = recvbuf[1 + (i << 1) + 1];
     if (led >= NUM_LEDS) {
@@ -79,12 +77,10 @@ static void process_set_brightness(const int n)
 
 static void callback_receive(const int n)
 {
-  int i;
-
   is_sendbuf_ready = 0;
   _MemoryBarrier();
 
-  for (i = 0; i < n; i ++) {
+  for (int i = 0; i < n; i ++) {
     while (!Wire.available())
       ;
     recvbuf[i] = Wire.read();
@@ -121,8 +117,7 @@ static void callback_request(void)
 
 void setup(void)
 {
-  int i;
-  for (i = 0; i < NUM_LEDS; i ++)
+  for (int i = 0; i < NUM_LEDS; i ++)
     pinMode(led_to_pin[i], OUTPUT);
 
   Wire.begin(ADDR);
@@ -135,8 +130,7 @@ void loop(void)
   if (!changing_brightness)
     return;
 
-  int i;
-  for (i = 0; i < NUM_LEDS; i ++)
+  for (int i = 0; i < NUM_LEDS; i ++)
     analogWrite(led_to_pin[i], brightnesses[i]);
 
   prepare_sendbuf(2, CMD_STATUS, STATUS_SUCCESS);
