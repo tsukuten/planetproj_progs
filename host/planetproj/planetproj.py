@@ -92,7 +92,7 @@ class PlanetProj(object):
                     (data[1], STATUS_SUCCESS))
         return (True, data[1])
 
-    def _write_with_cs(self, n, register, data, wait = 0.1, max_loops = 100):
+    def _write_with_cs(self, n, register, data):
         d = [register]
         d.extend(data)
         d.extend(self._to_le_array(self._crc16(d), n = 2))
@@ -101,8 +101,11 @@ class PlanetProj(object):
             return
         self.i2c.set_addr(self.addrs[n])
         self.i2c.write(d)
+
+    def _validate_response(self, n, wait = 0.001, max_loops = 100):
+        if self.dry_run:
+            return
         for i in range(max_loops):
-            time.sleep(wait)
             (succ, stat) = self._read_and_check_status()
             if succ and stat == STATUS_SUCCESS:
                 return
@@ -117,8 +120,13 @@ class PlanetProj(object):
                 raise IOError('Value is not recognized by slave')
             else:
                 raise IOError('Unknown successful stat: 0x%02x' % stat)
+            time.sleep(wait)
         raise IOError('Timeout (max_loops=%d) occured while waiting for slave' %
                 max_loops)
+
+    def _write_with_cs_and_validate(self, n, register, data, **kwargs):
+        self._write_with_cs(n, register, data)
+        self._validate_response(n, **kwargs)
 
 
 def main():

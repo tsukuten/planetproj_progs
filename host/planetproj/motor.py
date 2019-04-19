@@ -61,9 +61,9 @@ class Motor(planetproj.PlanetProj):
                     self.num_devs)
         if not(0 <= power <= 1):
             raise ValueError('power is not in range: [0, 1]')
-        self._write_with_cs(n, planetproj.CMD_SET_POWER,
+        self._write_with_cs_and_validate(n, planetproj.CMD_SET_POWER,
                 [0, int(round(power * 255))])
-        self._write_with_cs(n, planetproj.CMD_SET_POWER,
+        self._write_with_cs_and_validate(n, planetproj.CMD_SET_POWER,
                 [1, int(round(power * 255))])
 
     def set_max_idx(self, n, max_idx):
@@ -72,7 +72,7 @@ class Motor(planetproj.PlanetProj):
                     self.num_devs)
         if not(0 <= max_idx < (1<<16)):
             raise ValueError('max_idx is not an unsigned 16-bit integer')
-        self._write_with_cs(n, planetproj.CMD_SET_MAX_IDX,
+        self._write_with_cs_and_validate(n, planetproj.CMD_SET_MAX_IDX,
                 [max_idx & 0xff, max_idx >> 8])
 
     def set_idx_step(self, n, idx_step):
@@ -81,7 +81,8 @@ class Motor(planetproj.PlanetProj):
                     self.num_devs)
         if not(1 <= idx_step < (1<<8)):
             raise ValueError('idx_step is not an unsigned 8-bit integer')
-        self._write_with_cs(n, planetproj.CMD_SET_IDX_STEP, [idx_step])
+        self._write_with_cs_and_validate(n, planetproj.CMD_SET_IDX_STEP,
+                [idx_step])
 
     def set_drive_mode(self, n, mode):
         if not(0 <= n < self.num_devs):
@@ -89,7 +90,8 @@ class Motor(planetproj.PlanetProj):
                     self.num_devs)
         if not(0 <= mode < (1<<8)):
             raise ValueError('mode is not an unsigned 8-bit integer')
-        self._write_with_cs(n, planetproj.CMD_SET_DRIVE_MODE, [mode])
+        self._write_with_cs_and_validate(n, planetproj.CMD_SET_DRIVE_MODE,
+                [mode])
 
     def set_zero_position(self, n):
         if not(0 <= n < self.num_devs):
@@ -122,7 +124,7 @@ class Motor(planetproj.PlanetProj):
         else:
             is_back = 0
         print('Rotating', '-' if is_back else '+', step, 'steps')
-        self._write_with_cs(n, planetproj.CMD_SET_ROTATE,
+        self._write_with_cs_and_validate(n, planetproj.CMD_SET_ROTATE,
                 [is_back, step & 0xff, step >> 8], wait = 1)
 
     def do_rotate_degree_relative(self, n, degree):

@@ -41,3 +41,6 @@ class LED(planetproj.PlanetProj):
         for i in range(self.num_devs):
             if len(ds[i]) > 0:
                 self._write_with_cs(i, planetproj.CMD_SET_BRIGHTNESS, ds[i])
+        for i in range(self.num_devs):
+            if len(ds[i]) > 0:
+                self._validate_response(i)
