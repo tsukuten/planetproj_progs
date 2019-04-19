@@ -72,7 +72,7 @@ static void process_set_brightness(const int n)
   memcpy((void*) brightnesses, (void*) brightnesses_tmp, sizeof(brightnesses));
   _MemoryBarrier();
   changing_brightness = !0;
-  /* Not preparing sendbuf. */
+  prepare_sendbuf(2, CMD_STATUS, STATUS_SUCCESS);
 }
 
 static void callback_receive(const int n)
@@ -103,6 +103,7 @@ static void callback_receive(const int n)
 static void callback_request(void)
 {
   if (!is_sendbuf_ready) {
+    /* TOOD: One day we will not calculate the CRC on AVR at all like this! */
     const uint8_t msg[4] = {CMD_STATUS, STATUS_NOT_READY, 0x10, 0x33};
     Wire.write(msg, sizeof(msg));
     return;
@@ -132,8 +133,6 @@ void loop(void)
 
   for (int i = 0; i < NUM_LEDS; i ++)
     analogWrite(led_to_pin[i], brightnesses[i]);
-
-  prepare_sendbuf(2, CMD_STATUS, STATUS_SUCCESS);
 
   _MemoryBarrier();
   changing_brightness = 0;
