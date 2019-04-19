@@ -118,8 +118,10 @@ static void callback_request(void)
 
 void setup(void)
 {
-  for (int i = 0; i < NUM_LEDS; i ++)
+  for (int i = 0; i < NUM_LEDS; i ++) {
     pinMode(led_to_pin[i], OUTPUT);
+    analogWrite(led_to_pin[i], 127);
+  }
 
   Wire.begin(ADDR);
   Wire.onReceive(callback_receive);
