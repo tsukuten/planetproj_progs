@@ -38,9 +38,11 @@ class LED(planetproj.PlanetProj):
             self.cur_brightness[led] = brightness
             ds[led // self.num_leds_per_dev].extend(
                     [led % self.num_leds_per_dev, int(round(brightness * 255))])
+        data_with_cs = {}
         for i in range(self.num_devs):
             if len(ds[i]) > 0:
-                self._write_with_cs(i, planetproj.CMD_SET_BRIGHTNESS, ds[i])
+                data_with_cs[i] = self._write_with_cs(i,
+                        planetproj.CMD_SET_BRIGHTNESS, ds[i])
         for i in range(self.num_devs):
             if len(ds[i]) > 0:
-                self._validate_response(i)
+                self._validate_response(i, data_with_cs_last = data_with_cs[i])

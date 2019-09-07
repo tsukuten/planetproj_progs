@@ -101,8 +101,10 @@ class PlanetProj(object):
             return
         self.i2c.set_addr(self.addrs[n])
         self.i2c.write(d)
+        return d
 
-    def _validate_response(self, n, wait = 0.001, max_loops = 100):
+    def _validate_response(self, n, wait = 0.001, max_loops = 100,
+            data_with_cs_last = None):
         if self.dry_run:
             return
         for i in range(max_loops):
@@ -110,8 +112,11 @@ class PlanetProj(object):
             if succ and stat == STATUS_SUCCESS:
                 return
             if (not succ) or stat == STATUS_WRONG_CHECKSUM:
-                print('Checksum is wrong; re-sending...')
-                self.i2c.write(d)
+                if data_with_cs_last is not None:
+                    print('Checksum is wrong; re-sending...')
+                    self.i2c.write(d_last)
+                else:
+                    raise IOError('Checksum is wrong')
             elif stat == STATUS_UNKNOWN_COMMAND:
                 raise IOError('Command is not recognized by slave')
             elif stat == STATUS_NOT_READY:
@@ -125,7 +130,7 @@ class PlanetProj(object):
                 max_loops)
 
     def _write_with_cs_and_validate(self, n, register, data, **kwargs):
-        self._write_with_cs(n, register, data)
+        kwargs['data_with_cs_last'] = self._write_with_cs(n, register, data)
         self._validate_response(n, **kwargs)
 
 
