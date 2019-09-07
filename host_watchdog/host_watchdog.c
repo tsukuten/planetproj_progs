@@ -56,7 +56,8 @@ static void pin_export(const unsigned pin)
         pprintf_exit("close(%s)", filename);
 }
 
-static void pin_set_output(const unsigned pin)
+static void pin_set_direction(const unsigned pin, const char *dir,
+        const size_t n)
 {
     char filename[PATH_MAX];
     snprintf(filename, sizeof(filename), "/sys/class/gpio/gpio%u/direction",
@@ -66,13 +67,34 @@ static void pin_set_output(const unsigned pin)
     if (fd == -1)
         pprintf_exit("open(%s)", filename);
 
-    const ssize_t ret = write(fd, "out", 3);
+    const ssize_t ret = write(fd, dir, n);
     if (ret != 3)
         pprintf_exit("write(%s)", filename);
 
     const int err = close(fd);
     if (err)
         pprintf_exit("close(%s)", filename);
+}
+
+static _Bool pin_input(const unsigned pin)
+{
+    char filename[PATH_MAX];
+    snprintf(filename, sizeof(filename), "/sys/class/gpio/gpio%u/value", pin);
+
+    const int fd = open(filename, O_RDONLY);
+    if (fd == -1)
+        pprintf_exit("open(%s)", filename);
+
+    uint8_t c;
+    const ssize_t ret = read(fd, &c, 1);
+    if (ret != 1)
+        pprintf_exit("write(%s)", filename);
+
+    const int err = close(fd);
+    if (err)
+        pprintf_exit("close(%s)", filename);
+
+    return c != '0';
 }
 
 static void pin_output(const unsigned pin, const _Bool val)
@@ -110,14 +132,14 @@ static void check_i2c_funcs(const int fd)
 }
 
 #define NUM_SLAVES 4
+#define PIN_POWER 21
 
 int main(int argc, char *argv[])
 {
-    int fd;
     int err;
     const char *filename = argv[1];
     const struct slave {
-        unsigned long addr;
+        unsigned addr;
         unsigned pin_red;
         unsigned pin_green;
     } slaves[NUM_SLAVES] = {
@@ -130,11 +152,7 @@ int main(int argc, char *argv[])
     if (argc != 1 + 1)
         printf_exit("Usage: %s I2CDEV", argv[0]);
 
-    fd = open(filename, O_NONBLOCK);
-    if (fd == -1)
-        pprintf_exit("open: %s", filename);
-
-    check_i2c_funcs(fd);
+    pin_export(PIN_POWER);
 
     for (size_t i = 0; i < NUM_SLAVES; i ++) {
         const unsigned pin_red = slaves[i].pin_red;
@@ -144,11 +162,26 @@ int main(int argc, char *argv[])
     }
 
     /* Sleep for udev to relax permission of gpio files. */
-    (void) nanosleep(&(struct timespec){.tv_sec = 0, .tv_nsec = 100000000L},
-            NULL);
+    (void) nanosleep(&(struct timespec){.tv_sec = 1, .tv_nsec = 0}, NULL);
+
+    if (!pin_input(PIN_POWER)) {
+        for (size_t i = 0; i < NUM_SLAVES; i ++) {
+            const unsigned pin_red = slaves[i].pin_red;
+            const unsigned pin_green = slaves[i].pin_green;
+            pin_output(pin_red, 0);
+            pin_output(pin_green, 0);
+        }
+        return 0;
+    }
+
+    const int fd = open(filename, O_NONBLOCK);
+    if (fd == -1)
+        pprintf_exit("open: %s", filename);
+
+    check_i2c_funcs(fd);
 
     for (size_t i = 0; i < NUM_SLAVES; i ++) {
-        const unsigned long addr = slaves[i].addr;
+        const unsigned addr = slaves[i].addr;
         const unsigned pin_red = slaves[i].pin_red;
         const unsigned pin_green = slaves[i].pin_green;
         int32_t res;
@@ -156,15 +189,15 @@ int main(int argc, char *argv[])
         err = ioctl(fd, I2C_SLAVE, addr);
         if (err) {
             if (errno != EBUSY)
-                pprintf_exit("ioctl(I2C_SLAVE, %lu)", addr);
+                pprintf_exit("ioctl(I2C_SLAVE, %u)", addr);
 
             printf("Slave 0x%02x is busy (maybe alive)\n", addr);
             res = 0;
         } else
             res = i2c_smbus_write_quick(fd, I2C_SMBUS_WRITE);
 
-        pin_set_output(pin_red);
-        pin_set_output(pin_green);
+        pin_set_direction(pin_red, "out", 3);
+        pin_set_direction(pin_green, "out", 3);
 
         if (res >= 0) {
             printf("Slave 0x%02x is alive\n", addr);
