@@ -121,10 +121,10 @@ int main(int argc, char *argv[])
         unsigned pin_red;
         unsigned pin_green;
     } slaves[NUM_SLAVES] = {
-        {ADDR_LED_1,    4, 17},
-        {ADDR_LED_2,   27, 22},
-        {ADDR_MOTOR_1, 10,  9},
-        {ADDR_MOTOR_2, 11,  5},
+        {ADDR_LED_1,   22, 10},
+        {ADDR_LED_2,   11,  5},
+        {ADDR_MOTOR_1,  6, 13},
+        {ADDR_MOTOR_2, 19, 26},
     };
 
     if (argc != 1 + 1)
